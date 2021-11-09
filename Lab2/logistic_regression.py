@@ -9,29 +9,27 @@ def separate_label(data):
     y = pd.DataFrame(data.label)
     return X, y
 
-# Error Function: Cross-entropy loss
-# used to calculate the loss of estimate
-# a: estimation value of y
-# y: true value of y
-def cross_entropy(a, y):
-    return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a)))
 
 # Activation Function: Sigmoid
 # 1/(1+e^(-n)) used to calculate the estimate value y
 def sigmoid(n):
     return 1 / (1 + 1 / np.exp(n))
 
+# Error Function: Cross-entropy loss
+# used to calculate the loss of estimate
+# a: estimation value of y
+# y: true value of y
+def calculate_cross_entropy(y, a):
+    return -np.nan_to_num(np.multiply(y, np.log(a)) + np.multiply((1-y), np.log(1-a))).mean()
+
 def calculate_mse(y, a):
-    mse = np.square(np.subtract(y, a)).mean()
-    return mse
+    return np.square(np.subtract(y, a)).mean()
 
 def calculate_rmse(y, a):
-    rmse = np.sqrt(calculate_mse(y, a))
-    return rmse
+    return np.sqrt(calculate_mse(y, a))
 
 def calculate_mae(y, a):
-    mae = np.absolute(np.subtract(y, a)).mean()
-    return mae
+    return np.absolute(np.subtract(y, a)).mean()
 
 # generate 784 weights in this case with specific seed
 def generate_weight(seed):
@@ -113,6 +111,8 @@ def train_logistic_regression(data, validate_data , epoch, stop_error, early_sto
             error = calculate_mse(y, a)
         elif error_function  == 'mae':
             error = calculate_mae(y, a)
+        elif error_function == 'cross_entropy':
+            error = calculate_cross_entropy(y, a)
         else:
             error_function = 'rmse'
             error = calculate_rmse(y, a)
@@ -124,18 +124,19 @@ def train_logistic_regression(data, validate_data , epoch, stop_error, early_sto
         db = np.array(db)[0][0]
         weight = weight - learning_rate * dw
         bias = (bias - learning_rate * db)
-        acc = validate_logistic_regression(validate_data, weight=weight, bias=bias)
-        train_acc = validate_logistic_regression(data, weight=weight, bias=bias)
-        # print('|  CURRENT EPOCH: {}'.format(current_epoch + 1))
-        # print('EPOCH {}, bias : {}'.format(current_epoch+1, bias))
-        # print('EPOCH {}, weight 0: {}'.format(current_epoch+1, np.array(weight)[0][0]))
-        # print('EPOCH {}, weight 100: {}'.format(current_epoch+1, np.array(weight)[100][0]))
-        temp_str = 'EPOCH {}, {}_error: {}'.format(current_epoch+1, error_function, error)
-        # oneline_log(temp_str)
-        temp_str += '\t|  validate_acc: {}%'.format(acc)
-        # oneline_log(temp_str)
-        temp_str += '\t|  train_acc: {}%'.format(train_acc)
-        oneline_log(temp_str)
+        if(current_epoch % 100 == 0):
+            acc = validate_logistic_regression(validate_data, weight=weight, bias=bias)
+            train_acc = validate_logistic_regression(data, weight=weight, bias=bias)
+            # print('|  CURRENT EPOCH: {}'.format(current_epoch + 1))
+            # print('EPOCH {}, bias : {}'.format(current_epoch+1, bias))
+            # print('EPOCH {}, weight 0: {}'.format(current_epoch+1, np.array(weight)[0][0]))
+            # print('EPOCH {}, weight 100: {}'.format(current_epoch+1, np.array(weight)[100][0]))
+            temp_str = 'EPOCH {}, {}_error: {}'.format(current_epoch+1, error_function, error)
+            # oneline_log(temp_str)
+            temp_str += '    |  validate_acc: {}%'.format(acc)
+            # oneline_log(temp_str)
+            temp_str += '    |  train_acc: {}%'.format(train_acc)
+            oneline_log(temp_str)
 
         if(acc > max_acc):
             max_acc  = acc
@@ -184,7 +185,7 @@ def main():
     pd_train = pd_train_origin.sample(frac=0.8, random_state=2)
     pd_validate = pd_train_origin.drop(index=pd_train.index)
 
-    max_acc_weight, max_acc_bias, weight, bias = train_logistic_regression(data=pd_train_origin, validate_data=pd_validate, epoch=25000, stop_error=0.005, early_stop_threshold=0.3,  error_function='mse', learning_rate=0.1)
+    max_acc_weight, max_acc_bias, weight, bias = train_logistic_regression(data=pd_train_origin, validate_data=pd_validate, epoch=25000, stop_error=0.005, early_stop_threshold=0.3,  error_function='cross_entropy', learning_rate=0.1)
     acc = validate_logistic_regression(pd_validate, weight=max_acc_weight, bias=max_acc_bias)
 
     print('|  bias: {}'.format(bias))
