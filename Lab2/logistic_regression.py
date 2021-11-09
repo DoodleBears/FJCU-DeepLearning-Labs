@@ -177,6 +177,8 @@ def ans_generate(data, weight, bias):
     estimate = np.round(estimate).astype(int)
     estimate = np.array(estimate)[0]
     ans = pd.DataFrame(estimate)
+    ans = pd.DataFrame(ans[0].map({1:5, 0:2})) # map 1 to 5 and 0 to 2 
+    ans = ans.rename({0:'ans'},axis=1)
 
     return ans
 
@@ -185,23 +187,14 @@ def main():
     pd_train = pd_train_origin.sample(frac=0.8, random_state=2)
     pd_validate = pd_train_origin.drop(index=pd_train.index)
 
-    max_acc_weight, max_acc_bias, weight, bias = train_logistic_regression(data=pd_train_origin, validate_data=pd_validate, epoch=25000, stop_error=0.005, early_stop_threshold=0.3,  error_function='cross_entropy', learning_rate=0.1)
-    acc = validate_logistic_regression(pd_validate, weight=max_acc_weight, bias=max_acc_bias)
+    max_acc_weight, max_acc_bias, weight, bias = train_logistic_regression(data=pd_train_origin, validate_data=pd_validate, epoch=40000, stop_error=0.02, early_stop_threshold=0.2,  error_function='cross_entropy', learning_rate=0.1)
 
     print('|  bias: {}'.format(bias))
     print('|  weight: {}'.format(weight))
-    print('正确率: {}%'.format(acc))
-
 
     pd_test_origin = pd.read_csv('data/test.csv')
-    pd_test_origin
-
 
     ans = ans_generate(pd_test_origin, weight=max_acc_weight, bias=max_acc_bias)
-    ans = pd.DataFrame(ans[0].map({1:5, 0:2})) # map 1 to 5 and 0 to 2 
-
-    ans = ans.rename({0:'ans'},axis=1)
-
 
     ans.to_csv('test_ans.csv', index=None)
 
