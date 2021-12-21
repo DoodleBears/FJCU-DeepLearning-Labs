@@ -2,3 +2,5 @@
 .DS_Store
 data/
 *.csv
+*.pdf
+*.zip
