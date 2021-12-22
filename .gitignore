@@ -4,3 +4,5 @@ data/
 *.csv
 *.pdf
 *.zip
+*.xlsx
+*.txt
