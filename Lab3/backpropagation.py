@@ -120,7 +120,7 @@ validate_target = np.array(validate_target)
 
 
 # generate neuron for hidden layers
-layer_neuron = [36, 4]
+layer_neuron = [12, 4] # hidden layer 和 output layer
 all_layer_neuron = [784].extend(layer_neuron)
 print(all_layer_neuron)
 
@@ -137,7 +137,7 @@ for i, neuron in enumerate(layer_neuron):
 
 # -------------- hyper parameter -------------- 
 epoch_num = 300
-learning_rate = 0.0002
+learning_rate = 0.002
 overfit_threshold = 0.01 # 如果 acc 比 max_validate_acc 小 overfit_threshold 的话
 
 # 记录最佳情况
@@ -180,15 +180,16 @@ for epoch in range(epoch_num):
             if data == 1 and arr[i] == np.max(arr):
                 train_acc_count += 1
         
-        # 计算 loss
+        # Gradient
         error[len(layer_neuron)] = np.mat(loss_estimate - y).T
 
         for layer in range(len(layer_neuron) - 1, -1, -1):
-            # print(f'layer: {layer}')
-            left = np.mat(w[layer+1]).T
-            right = error[layer+1] * np.dot( a[layer], 1-a[layer])
-            error[layer] = np.dot(left , right)
-            # print(f'error {layer}: {error[layer]}')
+            left = np.mat(w[layer+1]).T * error[layer+1]
+            right = np.multiply( a[layer], 1-a[layer])
+            right = np.mat(right).T
+            error[layer] = np.multiply(left , right)
+            # print(f'layer: {layer}, error_shape: {error[layer+1].shape}, left_shape: {np.shape(left)}, right_shape: {np.shape(right)}')
+
 
         # Update parameter
         for layer in range(1, len(layer_neuron)+1):
@@ -235,7 +236,7 @@ for epoch in range(epoch_num):
             best_w = w
             best_epoch = epoch
         oneline_log('')
-        print(f'epoch {epoch + 1}: max_validate_acc = {max_validate_acc/validate_size}, train_acc = {train_acc_count / train_size}, train_loss = {train_loss}, validate_loss = {validate_loss}, validate_acc = {validate_acc_count/validate_size}')
+        print(f'epoch {epoch + 1}: max_validate_acc={max_validate_acc/validate_size}, train_acc={train_acc_count / train_size}, train_loss={train_loss}, validate_loss={validate_loss}, validate_acc={validate_acc_count/validate_size}')
     
     # 判断是否 overfitting
     if max_validate_acc/validate_size - validate_acc_count/validate_size > overfit_threshold and epoch > 100:
