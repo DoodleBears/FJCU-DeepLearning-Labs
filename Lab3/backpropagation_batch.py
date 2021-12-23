@@ -120,7 +120,7 @@ validate_target = np.array(validate_target)
 
 
 # generate neuron for hidden layers
-layer_neuron = [108, 36, 4]
+layer_neuron = [108, 4]
 all_layer_neuron = [784]
 all_layer_neuron.extend(layer_neuron)
 print(all_layer_neuron)
