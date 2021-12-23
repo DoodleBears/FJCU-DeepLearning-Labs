@@ -139,6 +139,7 @@ for i, neuron in enumerate(layer_neuron):
 epoch_num = 300
 learning_rate = 0.0002
 overfit_threshold = 0.01 # 如果 acc 比 max_validate_acc 小 overfit_threshold 的话
+batch_size = 100
 
 # 记录最佳情况
 validate_size = len(validate_target)
@@ -158,127 +159,137 @@ for epoch in range(epoch_num):
     train_loss_sum = 0
     oneline_log(f'epoch {epoch + 1}')
     train_acc_count = 0
-    for i, feature_data in enumerate(train_feature):
+    for batch in range(batch_size):
         # 第 i 笔 data 的 feature
         a = {} # output of layers
         error = {} # error of layers
-        a[0] = feature_data
+        a[0] = []
+        for index in range(batch * batch_size, (batch+1) * batch_size):
+            a[0].append(train_feature[index])
+        a[0] = np.mat(a[0])
+        print(np.shape(a[0]))
 
         # Forward
         for layer, neuron in enumerate(layer_neuron):
-            output = model.forward(a[layer], w[layer+1], b[layer+1])            
-            a[layer+1] = np.array(output.reshape(1,-1))[0]
+            output = model.forward(a[layer], w[layer+1], b[layer+1])  
+            print(f'layer {layer+1} output: {np.shape(output)}')          
+            a[layer+1] = output
 
-        # Backward
-        y = one_hot(train_target[i][0])
-        loss_estimate = a[len(layer_neuron)]
-        train_loss_sum += criterion.forward(loss_estimate, y)
-        arr = a[len(layer_neuron)]
+    #     # Backward
+    #     y = one_hot(train_target[i][0])
+    #     loss_estimate = a[len(layer_neuron)]
+    #     train_loss_sum += criterion.forward(loss_estimate, y)
+    #     arr = a[len(layer_neuron)]
 
-        # 计算正确笔数
-        for i, data in enumerate(y):
-            if data == 1 and arr[i] == np.max(arr):
-                train_acc_count += 1
+    #     # 计算正确笔数
+    #     for i, data in enumerate(y):
+    #         if data == 1 and arr[i] == np.max(arr):
+    #             train_acc_count += 1
         
-        # 计算 loss
-        error[len(layer_neuron)] = np.mat(loss_estimate - y).T
+    #     # 计算 loss
+    #     error[len(layer_neuron)] = np.mat(loss_estimate - y).T
 
-        for layer in range(len(layer_neuron) - 1, -1, -1):
-            # print(f'layer: {layer}')
-            left = np.mat(w[layer+1]).T
-            right = error[layer+1] * np.dot( a[layer], 1-a[layer])
-            error[layer] = np.dot(left , right)
-            # print(f'error {layer}: {error[layer]}')
+    #     for layer in range(len(layer_neuron) - 1, -1, -1):
+    #         # print(f'layer: {layer}')
+    #         left = np.mat(w[layer+1]).T
+    #         right = error[layer+1] * np.dot( a[layer], 1-a[layer])
+    #         error[layer] = np.dot(left , right)
+    #         # print(f'error {layer}: {error[layer]}')
 
-        # Update parameter
-        for layer in range(1, len(layer_neuron)+1):
-            dw = np.dot(error[layer] , np.mat(a[layer-1]))
-            w[layer] -= learning_rate * dw
-            b[layer] -= learning_rate * error[layer]
+    #     # Update parameter
+    #     for layer in range(1, len(layer_neuron)+1):
+    #         dw = np.dot(error[layer] , np.mat(a[layer-1]))
+    #         w[layer] -= learning_rate * dw
+    #         b[layer] -= learning_rate * error[layer]
 
-    train_loss = train_loss_sum / train_size
+    # train_loss = train_loss_sum / train_size
     
-    # 输出 validate 情况
-    if (epoch+1) % 1 == 0:
-        validate_acc_count = 0
-        validate_loss_sum = 0
+    # # 输出 validate 情况
+    # if (epoch+1) % 1 == 0:
+    #     validate_acc_count = 0
+    #     validate_loss_sum = 0
         
-        for i, feature_data in enumerate(validate_feature):
-            a = {} # output of layers
-            error = {} # error of layers
-            a[0] = feature_data
+    #     for i, feature_data in enumerate(validate_feature):
+    #         a = {} # output of layers
+    #         error = {} # error of layers
+    #         a[0] = feature_data
 
-            # Forward
-            for layer, neuron in enumerate(layer_neuron):
-                output = model.forward(a[layer], w[layer+1], b[layer+1])            
-                a[layer+1] = np.array(output.reshape(1,-1))[0]
+    #         # Forward
+    #         for layer, neuron in enumerate(layer_neuron):
+    #             output = model.forward(a[layer], w[layer+1], b[layer+1])            
+    #             a[layer+1] = np.array(output.reshape(1,-1))[0]
 
-            arr = a[len(layer_neuron)]
+    #         arr = a[len(layer_neuron)]
 
-            y = one_hot(validate_target[i][0])
+    #         y = one_hot(validate_target[i][0])
          
-            for i, data in enumerate(y):
-                if data == 1 and arr[i] == np.max(arr):
-                    validate_acc_count += 1
-            # Backward
-            loss_estimate = a[len(layer_neuron)]
-            validate_loss_sum += criterion.forward(loss_estimate, y)
+    #         for i, data in enumerate(y):
+    #             if data == 1 and arr[i] == np.max(arr):
+    #                 validate_acc_count += 1
+    #         # Backward
+    #         loss_estimate = a[len(layer_neuron)]
+    #         validate_loss_sum += criterion.forward(loss_estimate, y)
         
-        validate_loss = validate_loss_sum / validate_size
-        if max_train_acc < train_acc_count:
-            max_train_acc = train_acc_count
-            best_train_loss = train_loss
-        if max_validate_acc < validate_acc_count:
-            max_validate_acc = validate_acc_count
-            best_validate_loss = validate_loss
-            best_b = b
-            best_w = w
-            best_epoch = epoch
-        oneline_log('')
-        print(f'epoch {epoch + 1}: max_validate_acc = {max_validate_acc/validate_size}, train_acc = {train_acc_count / train_size}, train_loss = {train_loss}, validate_loss = {validate_loss}, validate_acc = {validate_acc_count/validate_size}')
+    #     validate_loss = validate_loss_sum / validate_size
+    #     if max_train_acc < train_acc_count:
+    #         max_train_acc = train_acc_count
+    #         best_train_loss = train_loss
+    #     if max_validate_acc < validate_acc_count:
+    #         max_validate_acc = validate_acc_count
+    #         best_validate_loss = validate_loss
+    #         best_b = b
+    #         best_w = w
+    #         best_epoch = epoch
+    #     oneline_log('')
+    #     print(f'epoch {epoch + 1}: max_validate_acc = {max_validate_acc/validate_size}, train_acc = {train_acc_count / train_size}, train_loss = {train_loss}, validate_loss = {validate_loss}, validate_acc = {validate_acc_count/validate_size}')
     
-    # 判断是否 overfitting
-    if max_validate_acc/validate_size - validate_acc_count/validate_size > overfit_threshold and epoch > 100:
-        is_overfit = True
-        print('========== stop because overfitting ==========')
-        break
-
-
-print(f'best result at epoch {best_epoch + 1}: learning_rate={learning_rate}, neuron={all_layer_neuron}, validate_acc={max_validate_acc/validate_size}, train_acc={max_train_acc/train_size}')
-
-# 针对 test 档案生成 ans
-pd_test_origin = pd.read_csv('data/lab3_test.csv')
-pd_test_origin = pd_test_origin / 255
-pd_test_origin = np.array(pd_test_origin)
-
-
-ans = []
-for i, feature_data in enumerate(pd_test_origin):
-    a = {} # output of layers
-    error = {} # error of layers
-    a[0] = feature_data
-
-    # Forward
-    for layer, neuron in enumerate(layer_neuron):
-        output = model.forward(a[layer], best_w[layer+1], best_b[layer+1])            
-        a[layer+1] = np.array(output.reshape(1,-1))[0]
-
-    arr = a[len(layer_neuron)]
-
-    for i, data in enumerate(arr):
-        if data == np.max(arr):
-            if i == 0:
-                ans.append(0)
-            elif i == 1:
-                ans.append(3)
-            elif i == 2:
-                ans.append(8)
-            elif i == 3:
-                ans.append(9)      
+    # # 判断是否 overfitting
+    # if max_validate_acc/validate_size - validate_acc_count/validate_size > overfit_threshold and epoch > 100:
+    #     is_overfit = True
+    #     print('========== stop because overfitting ==========')
+    #     break
 
 
 
-test_ans = pd.DataFrame(ans)
-test_ans = test_ans.rename({0:'ans'},axis=1)
-test_ans.to_csv('test_ans.csv', index=None)
+
+
+
+
+# print(f'best result at epoch {best_epoch + 1}: learning_rate={learning_rate}, neuron={all_layer_neuron}, validate_acc={max_validate_acc/validate_size}, train_acc={max_train_acc/train_size}')
+
+# # 针对 test 档案生成 ans
+# pd_test_origin = pd.read_csv('data/lab3_test.csv')
+# pd_test_origin = pd_test_origin / 255
+# pd_test_origin = np.array(pd_test_origin)
+
+
+# ans = []
+# for i, feature_data in enumerate(pd_test_origin):
+#     a = {} # output of layers
+#     error = {} # error of layers
+#     a[0] = feature_data
+
+#     # Forward
+#     for layer, neuron in enumerate(layer_neuron):
+#         output = model.forward(a[layer], best_w[layer+1], best_b[layer+1])            
+#         a[layer+1] = np.array(output.reshape(1,-1))[0]
+
+#     arr = a[len(layer_neuron)]
+
+#     for i, data in enumerate(arr):
+#         if data == np.max(arr):
+#             if i == 0:
+#                 ans.append(0)
+#             elif i == 1:
+#                 ans.append(3)
+#             elif i == 2:
+#                 ans.append(8)
+#             elif i == 3:
+#                 ans.append(9)      
+
+
+
+# test_ans = pd.DataFrame(ans)
+# test_ans = test_ans.rename({0:'ans'},axis=1)
+# test_ans.to_csv('test_ans.csv', index=None)
 
