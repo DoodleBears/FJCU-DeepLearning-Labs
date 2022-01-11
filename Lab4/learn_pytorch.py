@@ -1,17 +1,10 @@
 import torch
+from torch.utils.data import Dataset
+ 
+# 這兩個是資料處裡常用的套件
+import numpy as np
+import pandas as pd
 
-print(torch.cuda.is_available())
-# True (O)
-# False (X)
-
-x = torch.empty(2)
-print(x)
-# tensor([5.2430e+33, 5.4511e-43])
-
-x = torch.empty(2, 3)
-print(x)
-# tensor([[0., 0., 0.],
-#         [0., 0., 0.]])
 
 if torch.cuda.is_available():
     device = torch.device("cuda")

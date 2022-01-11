@@ -6,7 +6,13 @@ Please answer carefully.
 '''
 
 # Please import the required packages
+import torch
+import torch.nn as nn # neural networks
+from torch.utils.data import Dataset, DataLoader
+import torchvision.datasets as datasets # pytorch dataset
 
+import numpy as np
+import pandas as pd
 
 # Define NeuralNetwork
 class ConvolutionalNeuralNetwork(nn.Module):
@@ -18,7 +24,8 @@ class ConvolutionalNeuralNetwork(nn.Module):
         # ------- convalution layer -------
         # please add at least one more layer of conv
         # ::: your code :::
-        self.conv1 = nn.Conv2d(in_channels=, out_channels=, kernel_size=)
+        # NOTE: 卷积层 
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3)
 
         # ::: end of code :::
 
@@ -44,6 +51,7 @@ class ConvolutionalNeuralNetwork(nn.Module):
         # example: x = self.pool(self.relu(self.conv1(x))) # output size = 10x25x25
         # second conv
         # ::: your code :::
+        # NOTE: Second conv 第二层卷积
 
         # ::: end of code :::
 
@@ -51,6 +59,7 @@ class ConvolutionalNeuralNetwork(nn.Module):
         x = torch.flatten(x, 1)
         # fully connection layers
         # ::: your code :::
+        # NOTE: FC 层 全连接
 
         # ::: end of code :::
 
@@ -60,55 +69,82 @@ class ConvolutionalNeuralNetwork(nn.Module):
 def train():
     # Device configuration
     # ::: your code :::
-
+    # NOTE: device
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+        
     # ::: end of code :::
 
     # set up basic parameters
     # ::: your code :::
-
+    num_epochs = 10
+    batch_size = 100
+    learning_rate = 0.02
     # ::: end of code :::
 
     # step 0: import the data and set it as Pytorch dataset
     # Dataset: CIFAR10 dataset
-    CIFAR10_train_data = 
+    # NOTE: Dataset
+    CIFAR10_train_data = datasets.CIFAR10('./data', train=True, download=True)
     CIFAR10_test_data = datasets.CIFAR10('./data', train=False, download=True)
-
-    train_loader = 
+    # NOTE: train_loader
+    train_loader = DataLoader(dataset=CIFAR10_train_data, batch_size=batch_size)
     test_loader = DataLoader(dataset=CIFAR10_test_data, batch_size=batch_size)
 
     # step 1: set up models, criterion and optimizer
     model = ConvolutionalNeuralNetwork().to(device).train()
-    criterion = 
-    optimizer = 
+    # NOTE: criterion
+    criterion = nn.BCELoss()
+    # NOTE: optimizer
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
     # step 2: start training
     n_total_steps = len(train_loader)
     for epoch in range(num_epochs):
-        for i, (images, labels) in enumerate(train_loader):
+        for i, (images, labels) in enumerate(train_loader): # run each step in i batch
             images, labels = images.to(device), labels.to(device)
             # ::: your code :::
             # init optimizer
+            # 清零 gradient
+            optimizer.zero_grad()
+
+            y_predicted = model(images)
             
 
             # forward -> backward -> update
+            # NOTE: Loss
+            loss = criterion(y_predicted, labels)
+            
+            # backward
+            loss.backward()
 
 
+            # 更新 weight
+            optimizer.step()
+
+            
+
+            
             # ::: end of code :::
         print(f'epoch {epoch+1}/{num_epochs}, loss = {loss.item():.4f}')
 
         # step 3: Validation loop
         # ::: your code :::
+        # NOTE: Validation
 
         # ::: end of code :::
     print('Finished Training')
 
     # set model to Evaluation Mode
+    # NOTE: set model to Evaluation Mode
     model = model
     
 
     # step 4: Testing loop
     # no grad here
-    with :
+    with torch.no_grad() :
         n_correct = 0
         n_samples = 0
         n_class_correct = [0 for i in range(10)]
@@ -116,7 +152,7 @@ def train():
         # run through testing data
         
         # ::: your code :::
-        for :
+        for i, (images, labels) in enumerate(test_loader):
 
             # ::: end of code :::
             outputs = model(images)
@@ -141,9 +177,9 @@ def train():
 
     # save your model
     # ::: your code :::
+    # TODO: save model
 
     # ::: end of code :::
-
 
 if __name__ == '__main__':
     train()
