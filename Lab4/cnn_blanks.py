@@ -145,7 +145,6 @@ def train():
             # init optimizer
             # 清零 gradient
             optimizer.zero_grad()
-            # FIXME: 要不要 to(device)
             # NOTE: Forward
             y_predicted = model(images)
             # calculate correct number
@@ -168,7 +167,7 @@ def train():
         # ::: your code :::
         # NOTE: Validation
         
-        if (epoch+1) % 3 == 0:
+        if (epoch+1) % 2 == 0:
             with torch.no_grad() :
                 n_correct = 0
                 n_samples = 0

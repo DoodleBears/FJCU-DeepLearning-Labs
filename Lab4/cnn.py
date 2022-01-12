@@ -11,6 +11,7 @@ import torch.nn as nn # neural networks
 from torch.utils.data import DataLoader, random_split
 import torchvision.datasets as datasets # pytorch dataset
 import torchvision.transforms as transforms
+torch.manual_seed(233)
 
 import numpy as np
 import pandas as pd
@@ -28,24 +29,27 @@ class ConvolutionalNeuralNetwork(nn.Module):
         # please add at least one more layer of conv
         # ::: your code :::
         # NOTE: 卷积层 需要改成和书上不同的参数
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3) # 3x32x32 -> 6x30x30
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=16, kernel_size=5)# 6x15x15 -> 16x11x11
-        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3)# 16x10x10 -> 32x8x8
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=48, kernel_size=5) # 3x32x32 -> 48x28x28
+        self.conv2 = nn.Conv2d(in_channels=48, out_channels=128, kernel_size=3, padding=1) # 48x14x14 -> 128x14x14
+        self.conv3 = nn.Conv2d(in_channels=128, out_channels=192, kernel_size=3, padding=1) # 128x13x13 -> 192x13x13
+        self.conv4 = nn.Conv2d(in_channels=192, out_channels=128, kernel_size=3) # 192x12x12 -> 128x10x10
 
         # ::: end of code :::
 
         # ------- pooling layer and activation function -------
         # ::: your code :::
         # NOTE: pooling layer 池化层
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=1)
+        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=1)
+        self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.relu = nn.ReLU()
         # ::: end of code :::
 
         # ------- fully connected layers -------
         # ::: your code :::
         # NOTE: FC Fully Connected 全连接层
-        self.fc1 = nn.Linear(32*4*4, 120)
+        self.fc1 = nn.Linear(128*5*5, 120)
         self.fc2 = nn.Linear(120, 84)
         # The number of neurons in the last fully connected layer 
         # should be the same as number of classes
@@ -56,12 +60,13 @@ class ConvolutionalNeuralNetwork(nn.Module):
 
     def forward(self, x):
         # first conv
-        x = self.pool(self.relu(self.conv1(x))) # output size = 6x15x15
+        x = self.pool1(self.relu(self.conv1(x))) # output size = 48x15x15
         # second conv
         # ::: your code :::
-        # NOTE: Second conv 第二层卷积
-        x = self.pool2(self.relu(self.conv2(x))) # output size = 16x10x10
-        x = self.pool(self.relu(self.conv3(x))) # output size = 32x4x4
+        # NOTE: 其他卷积层
+        x = self.pool2(self.relu(self.conv2(x))) # output size = 128x14x14
+        x = self.pool3(self.relu(self.conv3(x))) # output size = 192x7x7
+        x = self.pool4(self.relu(self.conv4(x))) # output size = 128x4x4
 
         # ::: end of code :::
 
@@ -85,7 +90,6 @@ def train():
     # Device configuration
     # ::: your code :::
     # NOTE: device
-    torch.manual_seed(233)
     if torch.cuda.is_available():
         print('use cuda')
         device = torch.device("cuda")
@@ -98,7 +102,7 @@ def train():
     # set up basic parameters
     # ::: your code :::
     num_epochs = 100
-    batch_size = 5
+    batch_size = 10
     learning_rate = 0.001
     # ::: end of code :::
 
@@ -114,7 +118,7 @@ def train():
     CIFAR10_test_data = datasets.CIFAR10('./data', train=False, download=True, transform=transform)
     validate_size = 5000
     train_size = len(CIFAR10_train_data) - validate_size
-    train_ds, val_ds = random_split(CIFAR10_train_data, [train_size, validate_size])
+    train_ds, val_ds = random_split(CIFAR10_train_data, [train_size, validate_size], seed=100)
     # NOTE: train_loader
     
     train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
@@ -146,13 +150,10 @@ def train():
         n_samples = 0
         for i, (images, labels) in enumerate(train_loader): # run each step in i batch
             images, labels = images.to(device), labels.to(device)
-
-
             # ::: your code :::
             # init optimizer
             # 清零 gradient
             optimizer.zero_grad()
-            # FIXME: 要不要 to(device)
             # NOTE: Forward
             y_predicted = model(images)
             # calculate correct number
@@ -170,21 +171,21 @@ def train():
         if acc > best_train_acc:
                 best_train_acc = acc
         print(f'epoch {epoch+1}/{num_epochs}, train acc = {acc:.3f} %, loss = {loss.item():.4f}')
-        # TODO: 写 checkpoint save model
         # step 3: Validation loop
         # ::: your code :::
         # NOTE: Validation
-        
-        if (epoch+1) % 3 == 0:
-            now = datetime.now()
-            date_time = now.strftime("%m_%d_%Y_%H_%M_%S")
-            FILE = f'checkpoint/checkpoint_{date_time}_epoch_{epoch}.pt'
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': loss,
-                }, FILE)
+        # NOTE: checkpoint save model 根据 epoch 保存 model
+        date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        FILE = f'checkpoint/checkpoint_{date_time}_epoch_{epoch}.pt'
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss,
+            'acc': acc,
+            }, FILE)
+        if (epoch+1) % 2 == 0:
+            
 
             with torch.no_grad() :
                 n_correct = 0
@@ -268,7 +269,7 @@ def train():
 
     # save your model
     # ::: your code :::
-    # TODO: save model
+    # NOTE: 训练结束保存模型
     now = datetime.now()
     date_time = now.strftime("%m_%d_%Y_%H_%M_%S")
     FILE = f'model/model_{date_time}.pt'
