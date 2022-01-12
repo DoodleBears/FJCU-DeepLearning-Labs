@@ -15,6 +15,8 @@ import torchvision.transforms as transforms
 import numpy as np
 import pandas as pd
 
+from datetime import datetime
+
 # Define NeuralNetwork
 class ConvolutionalNeuralNetwork(nn.Module):
     def __init__(self):
@@ -26,8 +28,9 @@ class ConvolutionalNeuralNetwork(nn.Module):
         # please add at least one more layer of conv
         # ::: your code :::
         # NOTE: 卷积层 需要改成和书上不同的参数
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=6, kernel_size=5) # 3x32x32 -> 6x28x28
-        self.conv2 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5)# 6x14x14 -> 16x10x10
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3) # 3x32x32 -> 6x30x30
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=16, kernel_size=5)# 6x15x15 -> 16x11x11
+        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3)# 16x10x10 -> 32x8x8
 
         # ::: end of code :::
 
@@ -35,13 +38,14 @@ class ConvolutionalNeuralNetwork(nn.Module):
         # ::: your code :::
         # NOTE: pooling layer 池化层
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=1)
         self.relu = nn.ReLU()
         # ::: end of code :::
 
         # ------- fully connected layers -------
         # ::: your code :::
         # NOTE: FC Fully Connected 全连接层
-        self.fc1 = nn.Linear(16*5*5, 120)
+        self.fc1 = nn.Linear(32*4*4, 120)
         self.fc2 = nn.Linear(120, 84)
         # The number of neurons in the last fully connected layer 
         # should be the same as number of classes
@@ -52,11 +56,12 @@ class ConvolutionalNeuralNetwork(nn.Module):
 
     def forward(self, x):
         # first conv
-        x = self.pool(self.relu(self.conv1(x))) # output size = 6x14x14
+        x = self.pool(self.relu(self.conv1(x))) # output size = 6x15x15
         # second conv
         # ::: your code :::
         # NOTE: Second conv 第二层卷积
-        x = self.pool(self.relu(self.conv2(x))) # output size = 16x5x5
+        x = self.pool2(self.relu(self.conv2(x))) # output size = 16x10x10
+        x = self.pool(self.relu(self.conv3(x))) # output size = 32x4x4
 
         # ::: end of code :::
 
@@ -78,7 +83,7 @@ def train():
     # Device configuration
     # ::: your code :::
     # NOTE: device
-    torch.manual_seed(43)
+    torch.manual_seed(233)
     if torch.cuda.is_available():
         print('use cuda')
         device = torch.device("cuda")
@@ -91,8 +96,8 @@ def train():
     # set up basic parameters
     # ::: your code :::
     num_epochs = 100
-    batch_size = 100
-    learning_rate = 0.005
+    batch_size = 25
+    learning_rate = 0.002
     # ::: end of code :::
 
     # step 0: import the data and set it as Pytorch dataset
@@ -110,8 +115,8 @@ def train():
     train_ds, val_ds = random_split(CIFAR10_train_data, [train_size, validate_size])
     # NOTE: train_loader
     
-    train_loader = DataLoader(dataset=train_ds, batch_size=batch_size)
-    validate_loader = DataLoader(dataset=val_ds, batch_size=batch_size)
+    train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
+    validate_loader = DataLoader(dataset=val_ds, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(dataset=CIFAR10_test_data, batch_size=batch_size)
     # step 1: set up models, criterion and optimizer
     model = ConvolutionalNeuralNetwork()
@@ -132,7 +137,7 @@ def train():
     best_epoch = 0
     last_loss = 0.0
     loss_increase_time = 0 # for early-stop
-    loss_increase_threshold = 4 # for early-stop
+    loss_increase_threshold = 2 # for early-stop
     early_stop = False # for early-stop
     for epoch in range(num_epochs):
         n_correct = 0
@@ -252,7 +257,11 @@ def train():
     # save your model
     # ::: your code :::
     # TODO: save model
-
+    now = datetime.now()
+    date_time = now.strftime("%m_%d_%Y,_%H_%M_%S")
+    	
+    FILE = f'model/model_{date_time}.pt'
+    torch.save(model.state_dict(), FILE)
     # ::: end of code :::
 
 if __name__ == '__main__':
