@@ -6,6 +6,7 @@ Please answer carefully.
 '''
 
 # Please import the required packages
+import os
 import torch
 import torch.nn as nn # neural networks
 from torch.utils.data import DataLoader, random_split
@@ -118,7 +119,7 @@ def train():
     CIFAR10_test_data = datasets.CIFAR10('./data', train=False, download=True, transform=transform)
     validate_size = 5000
     train_size = len(CIFAR10_train_data) - validate_size
-    train_ds, val_ds = random_split(CIFAR10_train_data, [train_size, validate_size], seed=100)
+    train_ds, val_ds = random_split(CIFAR10_train_data, [train_size, validate_size])
     # NOTE: train_loader
     
     train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
@@ -176,6 +177,7 @@ def train():
         # NOTE: Validation
         # NOTE: checkpoint save model 根据 epoch 保存 model
         date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        
         FILE = f'checkpoint/checkpoint_{date_time}_epoch_{epoch}.pt'
         torch.save({
             'epoch': epoch,
@@ -277,4 +279,8 @@ def train():
     # ::: end of code :::
 
 if __name__ == '__main__':
+    if not os.path.exists('checkpoint'):
+        os.makedirs('checkpoint')
+    if not os.path.exists('model'):
+        os.makedirs('model')
     train()
