@@ -79,6 +79,8 @@ class ConvolutionalNeuralNetwork(nn.Module):
         return x
 
 
+   
+
 def train():
     # Device configuration
     # ::: your code :::
@@ -96,8 +98,8 @@ def train():
     # set up basic parameters
     # ::: your code :::
     num_epochs = 100
-    batch_size = 25
-    learning_rate = 0.002
+    batch_size = 5
+    learning_rate = 0.001
     # ::: end of code :::
 
     # step 0: import the data and set it as Pytorch dataset
@@ -117,7 +119,7 @@ def train():
     
     train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
     validate_loader = DataLoader(dataset=val_ds, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(dataset=CIFAR10_test_data, batch_size=batch_size)
+    test_loader = DataLoader(dataset=CIFAR10_test_data, batch_size=batch_size, shuffle=False)
     # step 1: set up models, criterion and optimizer
     model = ConvolutionalNeuralNetwork()
     print(model)
@@ -168,12 +170,22 @@ def train():
         if acc > best_train_acc:
                 best_train_acc = acc
         print(f'epoch {epoch+1}/{num_epochs}, train acc = {acc:.3f} %, loss = {loss.item():.4f}')
-
+        # TODO: 写 checkpoint save model
         # step 3: Validation loop
         # ::: your code :::
         # NOTE: Validation
         
         if (epoch+1) % 3 == 0:
+            now = datetime.now()
+            date_time = now.strftime("%m_%d_%Y_%H_%M_%S")
+            FILE = f'checkpoint/checkpoint_{date_time}_epoch_{epoch}.pt'
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+                }, FILE)
+
             with torch.no_grad() :
                 n_correct = 0
                 n_samples = 0
@@ -258,8 +270,7 @@ def train():
     # ::: your code :::
     # TODO: save model
     now = datetime.now()
-    date_time = now.strftime("%m_%d_%Y,_%H_%M_%S")
-    	
+    date_time = now.strftime("%m_%d_%Y_%H_%M_%S")
     FILE = f'model/model_{date_time}.pt'
     torch.save(model.state_dict(), FILE)
     # ::: end of code :::

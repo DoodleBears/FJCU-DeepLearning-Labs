@@ -7,3 +7,5 @@ data/
 *.xlsx
 *.txt
 image_data/
+checkpoint/
+model/
